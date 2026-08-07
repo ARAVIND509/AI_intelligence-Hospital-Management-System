@@ -1,0 +1,29 @@
+# Environment
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Alembic (keep versions tracked, ignore cache only)
+alembic/__pycache__/

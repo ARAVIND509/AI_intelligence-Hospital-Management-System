@@ -17,6 +17,8 @@ idna==3.18
 Mako==1.4.1
 MarkupSafe==3.0.3
 passlib==1.7.4
+psycopg==3.3.4
+psycopg-binary==3.3.4
 psycopg2-binary==2.9.12
 pyasn1==0.6.4
 pycparser==3.0
@@ -33,4 +35,5 @@ SQLAlchemy==2.0.51
 starlette==1.4.1
 typing-inspection==0.4.2
 typing_extensions==4.16.0
+tzdata==2026.3
 uvicorn==0.52.1
