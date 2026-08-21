@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -9,7 +9,10 @@ from app.db.base import Base
 class User(Base):
     __tablename__ = "users"
 
-    # Primary Key
+    # --------------------------------------------------
+    # PRIMARY KEY
+    # --------------------------------------------------
+
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
@@ -17,7 +20,10 @@ class User(Base):
         autoincrement=True,
     )
 
-    # Basic Information
+    # --------------------------------------------------
+    # BASIC INFORMATION
+    # --------------------------------------------------
+
     username: Mapped[str] = mapped_column(
         String(100),
         unique=True,
@@ -42,20 +48,29 @@ class User(Base):
         nullable=True,
     )
 
-    # Authentication
+    # --------------------------------------------------
+    # AUTHENTICATION
+    # --------------------------------------------------
+
     password_hash: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
 
-    # Authorization
+    # --------------------------------------------------
+    # AUTHORIZATION
+    # --------------------------------------------------
+
     role: Mapped[str] = mapped_column(
         String(50),
         default="patient",
         nullable=False,
     )
 
-    # Account Status
+    # --------------------------------------------------
+    # ACCOUNT STATUS
+    # --------------------------------------------------
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
@@ -68,7 +83,20 @@ class User(Base):
         nullable=False,
     )
 
-    # Audit Fields
+    # --------------------------------------------------
+    # DOCTOR RELATIONSHIP
+    # --------------------------------------------------
+
+    doctor: Mapped["Doctor | None"] = relationship(
+        "Doctor",
+        back_populates="user",
+        uselist=False,
+    )
+
+    # --------------------------------------------------
+    # AUDIT FIELDS
+    # --------------------------------------------------
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
@@ -81,6 +109,10 @@ class User(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+
+    # --------------------------------------------------
+    # REPRESENTATION
+    # --------------------------------------------------
 
     def __repr__(self) -> str:
         return (
