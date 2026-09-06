@@ -3,8 +3,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.dependencies import get_current_user, require_roles, verify_doctor_access
 from app.services.doctor_service import doctor_service
 from app.schemas.doctor import DoctorCreate, DoctorUpdate, DoctorResponse
+from app.models.user import User
 
 router = APIRouter(
     prefix="/doctors",
@@ -17,7 +19,11 @@ router = APIRouter(
     summary="Create Doctor",
     status_code=status.HTTP_201_CREATED,
 )
-def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db)):
+def create_doctor(
+    payload: DoctorCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN"]))
+):
     doctor = doctor_service.create_doctor(db, payload)
     return {
         "success": True,
@@ -38,7 +44,8 @@ def get_doctors(
     is_active: Optional[bool] = Query(None),
     is_available: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     items, total = doctor_service.get_doctors(
         db,
@@ -69,7 +76,11 @@ def get_doctors(
     summary="Get Doctor by ID",
     status_code=status.HTTP_200_OK,
 )
-def get_doctor(doctor_id: int, db: Session = Depends(get_db)):
+def get_doctor(
+    doctor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     doctor = doctor_service.get_doctor_or_404(db, doctor_id)
     return {
         "success": True,
@@ -83,7 +94,13 @@ def get_doctor(doctor_id: int, db: Session = Depends(get_db)):
     summary="Update Doctor",
     status_code=status.HTTP_200_OK,
 )
-def update_doctor(doctor_id: int, payload: DoctorUpdate, db: Session = Depends(get_db)):
+def update_doctor(
+    doctor_id: int,
+    payload: DoctorUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    verify_doctor_access(current_user, doctor_id)
     doctor = doctor_service.update_doctor(db, doctor_id, payload)
     return {
         "success": True,
@@ -97,7 +114,11 @@ def update_doctor(doctor_id: int, payload: DoctorUpdate, db: Session = Depends(g
     summary="Deactivate Doctor",
     status_code=status.HTTP_200_OK,
 )
-def deactivate_doctor(doctor_id: int, db: Session = Depends(get_db)):
+def deactivate_doctor(
+    doctor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN"]))
+):
     doctor = doctor_service.deactivate_doctor(db, doctor_id)
     return {
         "success": True,

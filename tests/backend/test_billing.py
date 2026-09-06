@@ -1,8 +1,8 @@
 import pytest
 
 
-def test_billing_crud(client):
-    p_res = client.post("/api/v1/patients/", json={"name": "David Miller"})
+def test_billing_crud(client, admin_headers):
+    p_res = client.post("/api/v1/patients/", headers=admin_headers, json={"name": "David Miller"})
     patient_id = p_res.json()["data"]["id"]
 
     bill_payload = {
@@ -24,7 +24,7 @@ def test_billing_crud(client):
         ]
     }
 
-    create_res = client.post("/api/v1/billing/", json=bill_payload)
+    create_res = client.post("/api/v1/billing/", headers=admin_headers, json=bill_payload)
     assert create_res.status_code == 201
     bill_data = create_res.json()["data"]
     bill_id = bill_data["bill_id"]
@@ -34,11 +34,11 @@ def test_billing_crud(client):
     assert bill_data["payment_status"] == "unpaid"
 
     # Update payment status
-    up_res = client.patch(f"/api/v1/billing/{bill_id}", json={"payment_status": "paid"})
+    up_res = client.patch(f"/api/v1/billing/{bill_id}", headers=admin_headers, json={"payment_status": "paid"})
     assert up_res.status_code == 200
     assert up_res.json()["data"]["payment_status"] == "paid"
 
     # Patient billing history
-    hist_res = client.get(f"/api/v1/billing/patient/{patient_id}")
+    hist_res = client.get(f"/api/v1/billing/patient/{patient_id}", headers=admin_headers)
     assert hist_res.status_code == 200
     assert len(hist_res.json()["data"]) == 1

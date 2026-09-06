@@ -3,12 +3,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.dependencies import get_current_user, require_roles, verify_patient_access
 from app.services.medical_record_service import medical_record_service
 from app.schemas.medical_record import (
     MedicalRecordCreate,
     MedicalRecordUpdate,
     MedicalRecordResponse,
 )
+from app.models.user import User
 
 router = APIRouter(
     prefix="/medical-records",
@@ -21,7 +23,11 @@ router = APIRouter(
     summary="Create Medical Record",
     status_code=status.HTTP_201_CREATED,
 )
-def create_record(payload: MedicalRecordCreate, db: Session = Depends(get_db)):
+def create_record(
+    payload: MedicalRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN", "DOCTOR"]))
+):
     rec = medical_record_service.create_record(db, payload)
     return {
         "success": True,
@@ -41,7 +47,8 @@ def get_records(
     patient_id: Optional[int] = Query(None),
     doctor_id: Optional[int] = Query(None),
     search: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN", "DOCTOR", "RECEPTIONIST"]))
 ):
     items, total = medical_record_service.get_records(
         db, page=page, limit=limit, patient_id=patient_id, doctor_id=doctor_id, search=search
@@ -66,8 +73,13 @@ def get_records(
     summary="Get Medical Record by ID",
     status_code=status.HTTP_200_OK,
 )
-def get_record(record_id: str, db: Session = Depends(get_db)):
+def get_record(
+    record_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     rec = medical_record_service.get_record_or_404(db, record_id)
+    verify_patient_access(current_user, rec.patient_id)
     return {
         "success": True,
         "message": "Medical record details fetched successfully",
@@ -80,7 +92,12 @@ def get_record(record_id: str, db: Session = Depends(get_db)):
     summary="Get Patient Medical History",
     status_code=status.HTTP_200_OK,
 )
-def get_patient_history(patient_id: int, db: Session = Depends(get_db)):
+def get_patient_history(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    verify_patient_access(current_user, patient_id)
     items = medical_record_service.get_patient_history(db, patient_id)
     serialized = [MedicalRecordResponse.model_validate(r).model_dump() for r in items]
     return {
@@ -95,7 +112,12 @@ def get_patient_history(patient_id: int, db: Session = Depends(get_db)):
     summary="Update Medical Record",
     status_code=status.HTTP_200_OK,
 )
-def update_record(record_id: str, payload: MedicalRecordUpdate, db: Session = Depends(get_db)):
+def update_record(
+    record_id: str,
+    payload: MedicalRecordUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN", "DOCTOR"]))
+):
     rec = medical_record_service.update_record(db, record_id, payload)
     return {
         "success": True,

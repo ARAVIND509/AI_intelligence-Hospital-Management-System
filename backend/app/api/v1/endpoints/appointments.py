@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.dependencies import get_current_user, verify_patient_access
 from app.services.appointment_service import appointment_service
 from app.schemas.appointment import (
     AppointmentCreate,
@@ -11,6 +12,7 @@ from app.schemas.appointment import (
     AppointmentReschedule,
     AppointmentResponse,
 )
+from app.models.user import User
 
 router = APIRouter(
     prefix="/appointments",
@@ -23,7 +25,12 @@ router = APIRouter(
     summary="Create Appointment",
     status_code=status.HTTP_201_CREATED,
 )
-def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)):
+def create_appointment(
+    payload: AppointmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    verify_patient_access(current_user, payload.patient_id)
     apt = appointment_service.create_appointment(db, payload)
     return {
         "success": True,
@@ -45,8 +52,12 @@ def list_appointments(
     patient_id: Optional[int] = Query(None),
     doctor_id: Optional[int] = Query(None),
     search: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
+    if current_user.role.upper() == "PATIENT":
+        patient_id = current_user.patient_id
+
     items, total = appointment_service.get_appointments(
         db,
         page=page,
@@ -77,8 +88,13 @@ def list_appointments(
     summary="Get Appointment Details",
     status_code=status.HTTP_200_OK,
 )
-def get_appointment(appointment_id: str, db: Session = Depends(get_db)):
+def get_appointment(
+    appointment_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     apt = appointment_service.get_appointment_or_404(db, appointment_id)
+    verify_patient_access(current_user, apt.patient_id)
     return {
         "success": True,
         "message": "Appointment details fetched successfully",
@@ -94,13 +110,16 @@ def get_appointment(appointment_id: str, db: Session = Depends(get_db)):
 def update_appointment(
     appointment_id: str,
     payload: AppointmentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    apt = appointment_service.update_appointment(db, appointment_id, payload)
+    apt = appointment_service.get_appointment_or_404(db, appointment_id)
+    verify_patient_access(current_user, apt.patient_id)
+    updated_apt = appointment_service.update_appointment(db, appointment_id, payload)
     return {
         "success": True,
         "message": "Appointment updated successfully",
-        "data": AppointmentResponse.model_validate(apt).model_dump()
+        "data": AppointmentResponse.model_validate(updated_apt).model_dump()
     }
 
 
@@ -112,13 +131,16 @@ def update_appointment(
 def reschedule_appointment(
     appointment_id: str,
     payload: AppointmentReschedule,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    apt = appointment_service.reschedule_appointment(db, appointment_id, payload)
+    apt = appointment_service.get_appointment_or_404(db, appointment_id)
+    verify_patient_access(current_user, apt.patient_id)
+    rescheduled_apt = appointment_service.reschedule_appointment(db, appointment_id, payload)
     return {
         "success": True,
         "message": "Appointment rescheduled successfully",
-        "data": AppointmentResponse.model_validate(apt).model_dump()
+        "data": AppointmentResponse.model_validate(rescheduled_apt).model_dump()
     }
 
 
@@ -127,10 +149,16 @@ def reschedule_appointment(
     summary="Cancel Appointment",
     status_code=status.HTTP_200_OK,
 )
-def cancel_appointment(appointment_id: str, db: Session = Depends(get_db)):
-    apt = appointment_service.cancel_appointment(db, appointment_id)
+def cancel_appointment(
+    appointment_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    apt = appointment_service.get_appointment_or_404(db, appointment_id)
+    verify_patient_access(current_user, apt.patient_id)
+    cancelled_apt = appointment_service.cancel_appointment(db, appointment_id)
     return {
         "success": True,
         "message": "Appointment cancelled successfully",
-        "data": AppointmentResponse.model_validate(apt).model_dump()
+        "data": AppointmentResponse.model_validate(cancelled_apt).model_dump()
     }

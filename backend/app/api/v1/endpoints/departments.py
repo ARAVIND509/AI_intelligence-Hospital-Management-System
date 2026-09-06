@@ -3,8 +3,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.dependencies import get_current_user, require_roles
 from app.services.department_service import department_service
 from app.schemas.department import DepartmentCreate, DepartmentUpdate, DepartmentResponse
+from app.models.user import User
 
 router = APIRouter(
     prefix="/departments",
@@ -17,7 +19,11 @@ router = APIRouter(
     summary="Create Department",
     status_code=status.HTTP_201_CREATED,
 )
-def create_department(payload: DepartmentCreate, db: Session = Depends(get_db)):
+def create_department(
+    payload: DepartmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN"]))
+):
     dept = department_service.create_department(db, payload)
     return {
         "success": True,
@@ -35,7 +41,8 @@ def get_departments(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     items, total = department_service.get_departments(db, page=page, limit=limit, search=search)
     pages = math.ceil(total / limit) if total > 0 else 1
@@ -58,7 +65,11 @@ def get_departments(
     summary="Get Department by ID",
     status_code=status.HTTP_200_OK,
 )
-def get_department(department_id: int, db: Session = Depends(get_db)):
+def get_department(
+    department_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     dept = department_service.get_department_or_404(db, department_id)
     return {
         "success": True,
@@ -72,7 +83,12 @@ def get_department(department_id: int, db: Session = Depends(get_db)):
     summary="Update Department",
     status_code=status.HTTP_200_OK,
 )
-def update_department(department_id: int, payload: DepartmentUpdate, db: Session = Depends(get_db)):
+def update_department(
+    department_id: int,
+    payload: DepartmentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN"]))
+):
     dept = department_service.update_department(db, department_id, payload)
     return {
         "success": True,

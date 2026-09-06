@@ -1,9 +1,9 @@
 import pytest
 
 
-def test_complete_phase7_end_to_end_workflow(client):
+def test_complete_phase7_end_to_end_workflow(client, admin_headers):
     # 1. Register Department
-    dept_res = client.post("/api/v1/departments/", json={
+    dept_res = client.post("/api/v1/departments/", headers=admin_headers, json={
         "name": "Orthopedics",
         "description": "Bone and joint care"
     })
@@ -11,7 +11,7 @@ def test_complete_phase7_end_to_end_workflow(client):
     dept_id = dept_res.json()["data"]["id"]
 
     # 2. Register Patient
-    patient_res = client.post("/api/v1/patients/", json={
+    patient_res = client.post("/api/v1/patients/", headers=admin_headers, json={
         "name": "Bruce Wayne",
         "age": 40,
         "gender": "Male",
@@ -24,7 +24,7 @@ def test_complete_phase7_end_to_end_workflow(client):
     patient_id = patient_res.json()["data"]["id"]
 
     # 3. Register Doctor in Department with availability
-    doctor_res = client.post("/api/v1/doctors/", json={
+    doctor_res = client.post("/api/v1/doctors/", headers=admin_headers, json={
         "name": "Dr. Thomas Elliot",
         "specialization": "Orthopedic Surgery",
         "department_id": dept_id,
@@ -40,7 +40,7 @@ def test_complete_phase7_end_to_end_workflow(client):
     doctor_id = doctor_res.json()["data"]["id"]
 
     # 4. Schedule Appointment
-    apt_res = client.post("/api/v1/appointments/", json={
+    apt_res = client.post("/api/v1/appointments/", headers=admin_headers, json={
         "patient_id": patient_id,
         "doctor_id": doctor_id,
         "appointment_date": "2026-10-05",
@@ -53,10 +53,10 @@ def test_complete_phase7_end_to_end_workflow(client):
     numeric_apt_id = apt_res.json()["data"]["id"]
 
     # Confirm Appointment
-    client.put(f"/api/v1/appointments/{apt_id}", json={"status": "confirmed"})
+    client.put(f"/api/v1/appointments/{apt_id}", headers=admin_headers, json={"status": "confirmed"})
 
     # 5. Doctor conducts consultation & creates Medical Record
-    rec_res = client.post("/api/v1/medical-records/", json={
+    rec_res = client.post("/api/v1/medical-records/", headers=admin_headers, json={
         "patient_id": patient_id,
         "doctor_id": doctor_id,
         "appointment_id": numeric_apt_id,
@@ -70,7 +70,7 @@ def test_complete_phase7_end_to_end_workflow(client):
     numeric_rec_id = rec_res.json()["data"]["id"]
 
     # 6. Issue Prescription
-    rx_res = client.post("/api/v1/prescriptions/", json={
+    rx_res = client.post("/api/v1/prescriptions/", headers=admin_headers, json={
         "patient_id": patient_id,
         "doctor_id": doctor_id,
         "appointment_id": numeric_apt_id,
@@ -90,7 +90,7 @@ def test_complete_phase7_end_to_end_workflow(client):
     rx_id = rx_res.json()["data"]["rx_id"]
 
     # 7. Generate Billing & Invoice
-    bill_res = client.post("/api/v1/billing/", json={
+    bill_res = client.post("/api/v1/billing/", headers=admin_headers, json={
         "patient_id": patient_id,
         "appointment_id": numeric_apt_id,
         "discount": 20.0,
@@ -107,18 +107,18 @@ def test_complete_phase7_end_to_end_workflow(client):
     assert bill_res.json()["data"]["net_amount"] == 340.0
 
     # 8. Complete Appointment & Settle Bill
-    client.put(f"/api/v1/appointments/{apt_id}", json={"status": "completed"})
-    client.patch(f"/api/v1/billing/{bill_id}", json={"payment_status": "paid"})
+    client.put(f"/api/v1/appointments/{apt_id}", headers=admin_headers, json={"status": "completed"})
+    client.patch(f"/api/v1/billing/{bill_id}", headers=admin_headers, json={"payment_status": "paid"})
 
     # 9. Verify Patient Medical History & Billing Records
-    hist_rec = client.get(f"/api/v1/medical-records/patient/{patient_id}")
+    hist_rec = client.get(f"/api/v1/medical-records/patient/{patient_id}", headers=admin_headers)
     assert hist_rec.status_code == 200
     assert len(hist_rec.json()["data"]) == 1
 
-    hist_rx = client.get(f"/api/v1/prescriptions/patient/{patient_id}")
+    hist_rx = client.get(f"/api/v1/prescriptions/patient/{patient_id}", headers=admin_headers)
     assert hist_rx.status_code == 200
     assert len(hist_rx.json()["data"]) == 1
 
-    hist_bill = client.get(f"/api/v1/billing/patient/{patient_id}")
+    hist_bill = client.get(f"/api/v1/billing/patient/{patient_id}", headers=admin_headers)
     assert hist_bill.status_code == 200
     assert hist_bill.json()["data"][0]["payment_status"] == "paid"

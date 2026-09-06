@@ -2,7 +2,6 @@ import sys
 import os
 import pytest
 
-# Ensure test DB is isolated file
 TEST_DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_hospital.db"))
 if os.path.exists(TEST_DB_FILE):
     try:
@@ -17,7 +16,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import Base, engine, SessionLocal, get_db
-from app.models import *  # Register all models on Base
+from app.core.security import hash_password, create_access_token
+from app.models.user import User
+from app.models import *
 
 
 def override_get_db():
@@ -56,3 +57,22 @@ def clean_db_records():
 def client():
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture
+def admin_headers():
+    session = SessionLocal()
+    admin = User(
+        username="admin_test",
+        email="admin@test.com",
+        password_hash=hash_password("admin123"),
+        role="ADMIN",
+        is_active=True
+    )
+    session.add(admin)
+    session.commit()
+    session.refresh(admin)
+
+    token = create_access_token(data={"sub": str(admin.id), "username": admin.username, "role": "ADMIN"})
+    session.close()
+    return {"Authorization": f"Bearer {token}"}
