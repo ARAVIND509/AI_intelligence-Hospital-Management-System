@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time, DateTime, Text, func
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time, DateTime, Text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+
 
 class Appointment(Base):
     __tablename__ = "appointments"
@@ -20,3 +21,6 @@ class Appointment(Base):
 
     patient = relationship("Patient", back_populates="appointments")
     doctor = relationship("Doctor", back_populates="appointments")
+    medical_record = relationship("MedicalRecord", back_populates="appointment", uselist=False)
+    prescription = relationship("Prescription", back_populates="appointment", uselist=False)
+    bill = relationship("Billing", back_populates="appointment", uselist=False)

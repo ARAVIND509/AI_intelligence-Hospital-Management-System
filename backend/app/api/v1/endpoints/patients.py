@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import math
+from typing import Optional
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.patient import Patient
-from app.schemas.patient import PatientCreate, PatientResponse
+from app.services.patient_service import patient_service
+from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse
 
 router = APIRouter(
     prefix="/patients",
@@ -10,38 +12,13 @@ router = APIRouter(
 )
 
 
-@router.get(
-    "/",
-    summary="Get All Patients",
-    description="Returns a list of all registered patients.",
-    status_code=status.HTTP_200_OK,
-)
-def get_patients(db: Session = Depends(get_db)):
-    patients = db.query(Patient).all()
-    items = [PatientResponse.model_validate(p).model_dump() for p in patients]
-    return {
-        "success": True,
-        "message": "Patients fetched successfully",
-        "data": items
-    }
-
-
 @router.post(
     "/",
     summary="Create Patient",
-    description="Creates a new patient record.",
     status_code=status.HTTP_201_CREATED,
 )
 def create_patient(payload: PatientCreate, db: Session = Depends(get_db)):
-    patient = Patient(
-        name=payload.name,
-        age=payload.age,
-        gender=payload.gender,
-        is_active=payload.is_active,
-    )
-    db.add(patient)
-    db.commit()
-    db.refresh(patient)
+    patient = patient_service.create_patient(db, payload)
     return {
         "success": True,
         "message": "Patient created successfully",
@@ -50,20 +27,70 @@ def create_patient(payload: PatientCreate, db: Session = Depends(get_db)):
 
 
 @router.get(
+    "/",
+    summary="Get All Patients",
+    status_code=status.HTTP_200_OK,
+)
+def get_patients(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    is_active: Optional[bool] = Query(None),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    items, total = patient_service.get_patients(db, page=page, limit=limit, is_active=is_active, search=search)
+    pages = math.ceil(total / limit) if total > 0 else 1
+    serialized = [PatientResponse.model_validate(p).model_dump() for p in items]
+    return {
+        "success": True,
+        "message": "Patients fetched successfully",
+        "data": {
+            "items": serialized,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": pages
+        }
+    }
+
+
+@router.get(
     "/{patient_id}",
     summary="Get Patient by ID",
-    description="Returns details of a specific patient.",
     status_code=status.HTTP_200_OK,
 )
 def get_patient(patient_id: int, db: Session = Depends(get_db)):
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
-    if not patient:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Patient with ID {patient_id} not found"
-        )
+    patient = patient_service.get_patient_or_404(db, patient_id)
     return {
         "success": True,
         "message": "Patient found",
+        "data": PatientResponse.model_validate(patient).model_dump()
+    }
+
+
+@router.patch(
+    "/{patient_id}",
+    summary="Update Patient",
+    status_code=status.HTTP_200_OK,
+)
+def update_patient(patient_id: int, payload: PatientUpdate, db: Session = Depends(get_db)):
+    patient = patient_service.update_patient(db, patient_id, payload)
+    return {
+        "success": True,
+        "message": "Patient updated successfully",
+        "data": PatientResponse.model_validate(patient).model_dump()
+    }
+
+
+@router.delete(
+    "/{patient_id}",
+    summary="Deactivate Patient",
+    status_code=status.HTTP_200_OK,
+)
+def deactivate_patient(patient_id: int, db: Session = Depends(get_db)):
+    patient = patient_service.deactivate_patient(db, patient_id)
+    return {
+        "success": True,
+        "message": "Patient deactivated successfully",
         "data": PatientResponse.model_validate(patient).model_dump()
     }

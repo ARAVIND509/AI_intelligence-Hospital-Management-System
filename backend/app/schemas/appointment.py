@@ -1,26 +1,8 @@
 from datetime import date, time, datetime
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-
-
-class PatientSummary(BaseModel):
-    id: int
-    name: str
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    is_active: bool = True
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class DoctorSummary(BaseModel):
-    id: int
-    name: str
-    specialization: Optional[str] = None
-    is_active: bool = True
-    is_available: bool = True
-
-    model_config = ConfigDict(from_attributes=True)
+from app.schemas.patient import PatientResponse
+from app.schemas.doctor import DoctorResponse
 
 
 class AppointmentBase(BaseModel):
@@ -59,15 +41,7 @@ class AppointmentResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
-    patient: Optional[PatientSummary] = None
-    doctor: Optional[DoctorSummary] = None
+    patient: Optional[PatientResponse] = None
+    doctor: Optional[DoctorResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class AppointmentPaginatedResponse(BaseModel):
-    items: List[AppointmentResponse]
-    total: int
-    page: int
-    limit: int
-    pages: int
