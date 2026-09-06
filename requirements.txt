@@ -96,7 +96,6 @@ nibabel==5.3.2
 numpy==2.2.6
 openai==2.44.0
 opencv-python==4.12.0.88
-opencv-python-headless==5.0.0.93
 openpyxl==3.1.2
 opt_einsum==3.4.0
 optree==0.18.0
@@ -105,9 +104,7 @@ packaging==25.0
 pandas==2.3.2
 passlib==1.7.4
 pathspec==1.1.1
-pdfminer.six==20260107
-pdfplumber==0.11.10
-pillow==12.3.0
+pillow==11.3.0
 platformdirs==4.10.0
 pluggy==1.6.0
 portalocker==2.10.1
@@ -129,7 +126,6 @@ Pygments==2.19.2
 PyJWT==2.13.0
 pyparsing==3.2.4
 pypdf==6.14.2
-pypdfium2==5.11.0
 PySocks==1.7.1
 pytest==9.1.1
 pytest-asyncio==1.4.0
@@ -137,7 +133,6 @@ pytest-cov==7.1.0
 python-dateutil==2.9.0.post0
 python-docx==1.2.0
 python-dotenv==1.2.2
-python-jobspy==1.1.13
 python-jose==3.5.0
 python-multipart==0.0.29
 pytokens==0.4.1
@@ -169,7 +164,6 @@ tensorboard-data-server==0.7.2
 tensorflow==2.20.0
 termcolor==3.3.0
 threadpoolctl==3.6.0
-tls-client==0.2.2
 torch==2.8.0
 torchvision==0.23.0
 tqdm==4.67.1
