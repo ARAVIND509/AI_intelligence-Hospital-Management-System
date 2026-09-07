@@ -14,6 +14,10 @@ from app.api.v1.endpoints import (
     pharmacy,
     admissions,
     department_head,
+    analytics,
+    ai_services,
+    predictive,
+    hospital_reports,
 )
 
 api_router = APIRouter()
@@ -31,3 +35,7 @@ api_router.include_router(laboratory.router)
 api_router.include_router(pharmacy.router)
 api_router.include_router(admissions.router)
 api_router.include_router(department_head.router)
+api_router.include_router(analytics.router)
+api_router.include_router(ai_services.router)
+api_router.include_router(predictive.router)
+api_router.include_router(hospital_reports.router)
