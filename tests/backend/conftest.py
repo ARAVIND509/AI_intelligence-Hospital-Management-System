@@ -60,6 +60,15 @@ def client():
 
 
 @pytest.fixture
+def db_session():
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@pytest.fixture
 def admin_headers():
     session = SessionLocal()
     admin = User(

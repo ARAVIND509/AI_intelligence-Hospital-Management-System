@@ -12,6 +12,7 @@ class AppointmentBase(BaseModel):
     appointment_time: time
     reason: Optional[str] = None
     notes: Optional[str] = None
+    appointment_type: Optional[str] = "OP"  # OP, IP
 
 
 class AppointmentCreate(AppointmentBase):
@@ -21,12 +22,29 @@ class AppointmentCreate(AppointmentBase):
 class AppointmentUpdate(BaseModel):
     reason: Optional[str] = None
     notes: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[str] = None  # scheduled, in_progress, completed, cancelled, rescheduled
+    appointment_type: Optional[str] = None
 
 
 class AppointmentReschedule(BaseModel):
     appointment_date: date
     appointment_time: time
+
+
+class DoctorAvailabilityCheck(BaseModel):
+    doctor_id: int
+    date: date
+
+
+class TimeSlot(BaseModel):
+    time: time
+    is_available: bool
+
+
+class DoctorAvailabilityResponse(BaseModel):
+    doctor_id: int
+    date: date
+    available_slots: List[TimeSlot]
 
 
 class AppointmentResponse(BaseModel):
@@ -39,6 +57,7 @@ class AppointmentResponse(BaseModel):
     reason: Optional[str] = None
     notes: Optional[str] = None
     status: str
+    appointment_type: str = "OP"
     created_at: datetime
     updated_at: datetime
     patient: Optional[PatientResponse] = None

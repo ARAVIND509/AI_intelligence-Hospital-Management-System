@@ -16,6 +16,7 @@ class Appointment(Base):
     reason = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
     status = Column(String(20), default="scheduled", nullable=False)
+    appointment_type = Column(String(20), default="OP", nullable=False)  # OP, IP
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 

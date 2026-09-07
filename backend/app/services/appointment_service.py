@@ -14,8 +14,10 @@ from app.models.appointment import Appointment
 from app.utils.id_generator import generate_appointment_id
 
 VALID_TRANSITIONS = {
-    "scheduled": ["confirmed", "cancelled"],
-    "confirmed": ["completed", "cancelled", "no_show"],
+    "scheduled": ["confirmed", "in_progress", "cancelled", "rescheduled"],
+    "confirmed": ["in_progress", "completed", "cancelled", "no_show", "rescheduled"],
+    "in_progress": ["completed", "cancelled"],
+    "rescheduled": ["scheduled", "confirmed", "in_progress", "cancelled"],
     "completed": [],
     "cancelled": [],
     "no_show": [],

@@ -1,10 +1,11 @@
+import uuid
 from typing import Optional, List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.repositories.billing_repository import billing_repository
 from app.services.patient_service import patient_service
-from app.schemas.billing import BillingCreate, BillingUpdate
-from app.models.billing import Billing, BillItem
+from app.schemas.billing import BillingCreate, BillingUpdate, PaymentTransactionCreate, RefundRequest
+from app.models.billing import Billing, BillItem, PaymentTransaction
 from app.utils.id_generator import generate_bill_id
 
 
@@ -41,12 +42,17 @@ class BillingService:
             bill_id=bill_id,
             patient_id=payload.patient_id,
             appointment_id=payload.appointment_id,
+            admission_id=payload.admission_id,
+            pharmacy_dispense_id=payload.pharmacy_dispense_id,
+            lab_order_id=payload.lab_order_id,
+            billing_type=payload.billing_type or "CONSULTATION",
             total_amount=total_amount,
             discount=payload.discount,
             tax=payload.tax,
             net_amount=net_amount,
             payment_status="unpaid",
             payment_method=payload.payment_method,
+            notes=payload.notes,
         )
         db.add(db_bill)
         db.flush()
@@ -69,6 +75,7 @@ class BillingService:
         limit: int = 20,
         patient_id: Optional[int] = None,
         payment_status: Optional[str] = None,
+        billing_type: Optional[str] = None,
         search: Optional[str] = None
     ):
         skip = (page - 1) * limit
@@ -77,6 +84,8 @@ class BillingService:
             filters["patient_id"] = patient_id
         if payment_status is not None:
             filters["payment_status"] = payment_status
+        if billing_type is not None:
+            filters["billing_type"] = billing_type
 
         items, total = billing_repository.get_multi(
             db,
@@ -84,7 +93,7 @@ class BillingService:
             limit=limit,
             filters=filters,
             search_query=search,
-            search_fields=["bill_id", "payment_status", "payment_method"]
+            search_fields=["bill_id", "payment_status", "payment_method", "billing_type"]
         )
         return items, total
 
@@ -100,7 +109,7 @@ class BillingService:
         if payload.tax is not None:
             bill.tax = payload.tax
         if payload.payment_status is not None:
-            if payload.payment_status not in ["unpaid", "partially_paid", "paid", "cancelled"]:
+            if payload.payment_status not in ["unpaid", "partially_paid", "paid", "cancelled", "refunded"]:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Invalid payment status '{payload.payment_status}'"
@@ -108,12 +117,81 @@ class BillingService:
             bill.payment_status = payload.payment_status
         if payload.payment_method is not None:
             bill.payment_method = payload.payment_method
+        if payload.notes is not None:
+            bill.notes = payload.notes
 
         bill.net_amount = max(0.0, bill.total_amount - bill.discount + bill.tax)
 
         db.commit()
         db.refresh(bill)
         return bill
+
+    def record_payment(self, db: Session, bill_id: str, payload: PaymentTransactionCreate) -> PaymentTransaction:
+        bill = self.get_bill_or_404(db, bill_id)
+
+        if bill.payment_status == "paid":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bill is already fully paid")
+
+        tx_number = f"TXN-{uuid.uuid4().hex[:8].upper()}"
+
+        tx = PaymentTransaction(
+            bill_id=bill.id,
+            transaction_number=tx_number,
+            amount=payload.amount,
+            payment_method=payload.payment_method,
+            transaction_type="PAYMENT",
+            notes=payload.notes,
+        )
+        db.add(tx)
+
+        # Calculate total payments made so far
+        existing_paid = sum(t.amount for t in bill.payments if t.transaction_type == "PAYMENT")
+        total_paid = existing_paid + payload.amount
+
+        if total_paid >= bill.net_amount:
+            bill.payment_status = "paid"
+        else:
+            bill.payment_status = "partially_paid"
+
+        bill.payment_method = payload.payment_method
+        db.add(bill)
+
+        db.commit()
+        db.refresh(tx)
+        return tx
+
+    def process_refund(self, db: Session, bill_id: str, payload: RefundRequest) -> PaymentTransaction:
+        bill = self.get_bill_or_404(db, bill_id)
+
+        existing_paid = sum(t.amount for t in bill.payments if t.transaction_type == "PAYMENT")
+        existing_refunded = sum(t.amount for t in bill.payments if t.transaction_type == "REFUND")
+        net_paid = existing_paid - existing_refunded
+
+        if payload.amount > net_paid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Refund amount ({payload.amount}) exceeds net paid amount ({net_paid})"
+            )
+
+        tx_number = f"RFD-{uuid.uuid4().hex[:8].upper()}"
+
+        tx = PaymentTransaction(
+            bill_id=bill.id,
+            transaction_number=tx_number,
+            amount=payload.amount,
+            payment_method=bill.payment_method or "cash",
+            transaction_type="REFUND",
+            notes=payload.reason,
+        )
+        db.add(tx)
+
+        if payload.amount >= net_paid:
+            bill.payment_status = "refunded"
+        db.add(bill)
+
+        db.commit()
+        db.refresh(tx)
+        return tx
 
 
 billing_service = BillingService()

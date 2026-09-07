@@ -5,12 +5,19 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles, verify_patient_access
 from app.services.billing_service import billing_service
-from app.schemas.billing import BillingCreate, BillingUpdate, BillingResponse
+from app.schemas.billing import (
+    BillingCreate,
+    BillingUpdate,
+    BillingResponse,
+    PaymentTransactionCreate,
+    PaymentTransactionResponse,
+    RefundRequest,
+)
 from app.models.user import User
 
 router = APIRouter(
     prefix="/billing",
-    tags=["Billing"]
+    tags=["Billing & Payments"]
 )
 
 
@@ -42,12 +49,13 @@ def get_bills(
     limit: int = Query(20, ge=1, le=100),
     patient_id: Optional[int] = Query(None),
     payment_status: Optional[str] = Query(None),
+    billing_type: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["ADMIN", "RECEPTIONIST"]))
 ):
     items, total = billing_service.get_bills(
-        db, page=page, limit=limit, patient_id=patient_id, payment_status=payment_status, search=search
+        db, page=page, limit=limit, patient_id=patient_id, payment_status=payment_status, billing_type=billing_type, search=search
     )
     pages = math.ceil(total / limit) if total > 0 else 1
     serialized = [BillingResponse.model_validate(b).model_dump() for b in items]
@@ -119,4 +127,42 @@ def update_bill(
         "success": True,
         "message": "Bill updated successfully",
         "data": BillingResponse.model_validate(bill).model_dump()
+    }
+
+
+@router.post(
+    "/{bill_id}/payments",
+    summary="Record Payment Transaction",
+    status_code=status.HTTP_201_CREATED,
+)
+def record_payment(
+    bill_id: str,
+    payload: PaymentTransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN", "RECEPTIONIST"]))
+):
+    tx = billing_service.record_payment(db, bill_id, payload)
+    return {
+        "success": True,
+        "message": "Payment transaction recorded successfully",
+        "data": PaymentTransactionResponse.model_validate(tx).model_dump()
+    }
+
+
+@router.post(
+    "/{bill_id}/refund",
+    summary="Process Refund Transaction",
+    status_code=status.HTTP_200_OK,
+)
+def process_refund(
+    bill_id: str,
+    payload: RefundRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN", "RECEPTIONIST"]))
+):
+    tx = billing_service.process_refund(db, bill_id, payload)
+    return {
+        "success": True,
+        "message": "Refund processed successfully",
+        "data": PaymentTransactionResponse.model_validate(tx).model_dump()
     }

@@ -33,5 +33,12 @@ class CRUDAppointment(CRUDBase[Appointment, AppointmentCreate, AppointmentUpdate
             query = query.filter(Appointment.id != exclude_apt_id)
         return query.first()
 
+    def get_by_doctor_and_date(self, db: Session, doctor_id: int, appointment_date: date) -> List[Appointment]:
+        return db.query(Appointment).filter(
+            Appointment.doctor_id == doctor_id,
+            Appointment.appointment_date == appointment_date,
+            Appointment.status != "cancelled"
+        ).all()
+
 
 appointment_repository = CRUDAppointment(Appointment)

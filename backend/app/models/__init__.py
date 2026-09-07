@@ -5,7 +5,10 @@ from .doctor import Doctor
 from .appointment import Appointment
 from .medical_record import MedicalRecord
 from .prescription import Prescription, PrescriptionMedicine
-from .billing import Billing, BillItem
+from .billing import Billing, BillItem, PaymentTransaction
+from .laboratory import LabTestCatalog, LabOrder, LabResult
+from .pharmacy import MedicineInventory, PharmacyDispense, PharmacyDispenseItem, InventoryLog
+from .admission import Ward, Bed, Admission, BedTransferLog
 
 __all__ = [
     "User",
@@ -18,4 +21,16 @@ __all__ = [
     "PrescriptionMedicine",
     "Billing",
     "BillItem",
+    "PaymentTransaction",
+    "LabTestCatalog",
+    "LabOrder",
+    "LabResult",
+    "MedicineInventory",
+    "PharmacyDispense",
+    "PharmacyDispenseItem",
+    "InventoryLog",
+    "Ward",
+    "Bed",
+    "Admission",
+    "BedTransferLog",
 ]
