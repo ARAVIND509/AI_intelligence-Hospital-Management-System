@@ -9,6 +9,7 @@ from .billing import Billing, BillItem, PaymentTransaction
 from .laboratory import LabTestCatalog, LabOrder, LabResult
 from .pharmacy import MedicineInventory, PharmacyDispense, PharmacyDispenseItem, InventoryLog
 from .admission import Ward, Bed, Admission, BedTransferLog
+from .audit_log import AuditLog
 
 __all__ = [
     "User",
@@ -33,4 +34,5 @@ __all__ = [
     "Bed",
     "Admission",
     "BedTransferLog",
+    "AuditLog",
 ]

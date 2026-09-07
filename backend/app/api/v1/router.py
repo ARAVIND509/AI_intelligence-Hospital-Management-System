@@ -18,6 +18,7 @@ from app.api.v1.endpoints import (
     ai_services,
     predictive,
     hospital_reports,
+    audit_logs,
 )
 
 api_router = APIRouter()
@@ -39,3 +40,4 @@ api_router.include_router(analytics.router)
 api_router.include_router(ai_services.router)
 api_router.include_router(predictive.router)
 api_router.include_router(hospital_reports.router)
+api_router.include_router(audit_logs.router)

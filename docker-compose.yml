@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: medimind-db
+    restart: always
+    environment:
+      POSTGRES_DB: medimind_db
+      POSTGRES_USER: medimind_user
+      POSTGRES_PASSWORD: medimind_secure_password_2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medimind_user -d medimind_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: medimind-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medimind-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://medimind_user:medimind_secure_password_2026@database:5432/medimind_db
+      SECRET_KEY: medimind_prod_secret_key_change_in_production
+      ENVIRONMENT: production
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+
+  nginx:
+    image: nginx:alpine
+    container_name: medimind-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployment/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

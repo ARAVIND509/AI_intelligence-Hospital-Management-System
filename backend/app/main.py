@@ -43,6 +43,10 @@ app.openapi = lambda: custom_openapi(app)
 # ----------------------------
 Base.metadata.create_all(bind=engine)
 
+from app.core.middleware import SecurityAndAuditMiddleware
+
+app.add_middleware(SecurityAndAuditMiddleware)
+
 # ----------------------------
 # CORS Middleware
 # ----------------------------
