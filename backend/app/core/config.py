@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    SECRET_KEY: str = "medimind_prod_secret_key_super_secure_2026_change_in_production"
+    SECRET_KEY: str = "DEV_ONLY_UNSECURE_SECRET_KEY_CHANGE_IN_PRODUCTION"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
 
