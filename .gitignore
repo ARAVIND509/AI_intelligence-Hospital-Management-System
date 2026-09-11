@@ -5,3 +5,7 @@ __pycache__/
 *.db
 .venv/
 .env
+logs/
+backups/
+node_modules/
+.next/

@@ -1,6 +1,6 @@
 import os
-import tarfile
 import sys
+import tarfile
 
 
 def restore_database(backup_filepath: str, target_db_path: str = "hospital.db") -> bool:
@@ -9,8 +9,12 @@ def restore_database(backup_filepath: str, target_db_path: str = "hospital.db") 
         return False
 
     try:
+        dest_dir = os.path.dirname(os.path.abspath(target_db_path)) or "."
         with tarfile.open(backup_filepath, "r:gz") as tar:
-            tar.extractall(path=os.path.dirname(os.path.abspath(target_db_path)) or ".")
+            if hasattr(tarfile, 'data_filter'):
+                tar.extractall(path=dest_dir, filter='data')
+            else:
+                tar.extractall(path=dest_dir)
 
         print(f"[RESTORE SUCCESS] Database restored successfully from '{backup_filepath}' to '{target_db_path}'")
         return True

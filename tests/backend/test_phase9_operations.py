@@ -24,6 +24,12 @@ def create_test_user(db_session, username, role, patient_id=None, doctor_id=None
     return user, token
 
 
+def get_next_weekday(days_ahead=1):
+    d = date.today() + timedelta(days=days_ahead)
+    while d.weekday() >= 5:
+        d += timedelta(days=1)
+    return d
+
 def test_phase9_complete_hospital_operations_workflow(client, db_session):
     # 1. Setup Department, Doctor, Patient, and Users
     dept = Department(name="Cardiology", description="Cardiology Dept")
@@ -72,7 +78,7 @@ def test_phase9_complete_hospital_operations_workflow(client, db_session):
     apt_data = {
         "patient_id": pat.id,
         "doctor_id": doc.id,
-        "appointment_date": str(date.today() + timedelta(days=1)),
+        "appointment_date": str(get_next_weekday(1)),
         "appointment_time": "10:00:00",
         "reason": "Chest Pain & Routine Checkup",
         "appointment_type": "OP"
@@ -85,7 +91,7 @@ def test_phase9_complete_hospital_operations_workflow(client, db_session):
 
     # Reschedule appointment
     reschedule_data = {
-        "appointment_date": str(date.today() + timedelta(days=2)),
+        "appointment_date": str(get_next_weekday(2)),
         "appointment_time": "11:00:00"
     }
     resc_res = client.patch(f"/api/v1/appointments/{apt_id}/reschedule", json=reschedule_data, headers=admin_headers)

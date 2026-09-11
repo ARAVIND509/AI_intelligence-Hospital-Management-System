@@ -22,14 +22,14 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
     description=APP_DESCRIPTION,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.DEBUG or settings.ENVIRONMENT != "production" else "/docs",
+    redoc_url="/redoc" if settings.DEBUG or settings.ENVIRONMENT != "production" else "/redoc",
     contact={
         "name": "Aravind Kumar",
-        "email": "your_email@example.com",
+        "email": "admin@hospital.local",
     },
     license_info={
-        "name": "MIT",
+        "name": "Proprietary",
     },
 )
 
@@ -50,10 +50,7 @@ app.add_middleware(SecurityAndAuditMiddleware)
 # ----------------------------
 # CORS Middleware
 # ----------------------------
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
 
 app.add_middleware(
     CORSMiddleware,
