@@ -17,8 +17,19 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from fastapi.testclient import TestClient
 from app.models import *
 from app.main import app
-from app.core.database import Base, engine, SessionLocal, get_db
+from app.core.database import Base, get_db
 from app.core.security import hash_password, create_access_token
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+test_engine = create_engine(
+    os.environ["DATABASE_URL"],
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+engine = test_engine
 
 
 def override_get_db():
