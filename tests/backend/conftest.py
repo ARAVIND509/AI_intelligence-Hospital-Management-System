@@ -9,16 +9,18 @@ if os.path.exists(TEST_DB_FILE):
     except Exception:
         pass
 
-os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_FILE}"
+db_file_clean = TEST_DB_FILE.replace("\\", "/")
+if not db_file_clean.startswith("/"):
+    db_file_clean = "/" + db_file_clean
+os.environ["DATABASE_URL"] = f"sqlite://{db_file_clean}"
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../backend")))
 
 from fastapi.testclient import TestClient
+from app.models import *
 from app.main import app
 from app.core.database import Base, engine, SessionLocal, get_db
 from app.core.security import hash_password, create_access_token
-from app.models.user import User
-from app.models import *
 
 
 def override_get_db():
