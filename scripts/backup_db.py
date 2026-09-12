@@ -4,16 +4,26 @@ import tarfile
 from datetime import datetime, timezone
 
 
-def backup_database(db_path: str = "hospital.db", backup_dir: str = "backups", db_url_or_path: str = None) -> str:
-    target_input = db_url_or_path if db_url_or_path is not None else db_path
+DEFAULT_DB_PATH = "hospital.db"
+
+
+def backup_database(db_path: str = None, backup_dir: str = "backups", db_url_or_path: str = None) -> str:
+    if db_url_or_path is not None:
+        db_url = db_url_or_path
+    elif db_path is not None:
+        db_url = db_path
+    elif os.getenv("DATABASE_URL"):
+        db_url = os.getenv("DATABASE_URL")
+    else:
+        db_url = DEFAULT_DB_PATH
+
+    target_input = db_url
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir, exist_ok=True)
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     backup_filename = f"medimind_db_backup_{timestamp}.tar.gz"
     backup_filepath = os.path.join(backup_dir, backup_filename)
-
-    db_url = os.getenv("DATABASE_URL", target_input)
 
     if db_url.startswith("postgresql"):
         print(f"[BACKUP] Performing PostgreSQL database backup for '{db_url}'...")

@@ -51,6 +51,19 @@ def test_phase12_database_backup_and_restore(tmp_path):
     assert success is True
 
 
+def test_backup_database_explicit_precedence_over_env_var(tmp_path, monkeypatch):
+    """Regression test: verify explicit db_path argument takes precedence over DATABASE_URL env var."""
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///./non_existent_unreachable_database_file.db")
+    db_file = tmp_path / "explicit_override.db"
+    db_file.write_text("explicit db content")
+
+    backup_dir = tmp_path / "precedence_backups"
+    backup_file = backup_database(db_path=str(db_file), backup_dir=str(backup_dir))
+
+    assert backup_file != ""
+    assert os.path.exists(backup_file)
+
+
 def test_phase12_role_authorization_and_jwt_workflow(client, db_session):
     """Verify JWT authentication and role authorization for hospital workflows."""
     admin = User(
