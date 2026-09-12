@@ -30,7 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /root/.local /root/.local
-COPY app /app/app
+COPY backend/alembic.ini /app/alembic.ini
+COPY backend/app /app/app
 COPY scripts /app/scripts
 
 EXPOSE 8000

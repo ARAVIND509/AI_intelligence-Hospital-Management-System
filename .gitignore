@@ -9,3 +9,8 @@ logs/
 backups/
 node_modules/
 .next/
+*.key
+*.crt
+*.pem
+
+
