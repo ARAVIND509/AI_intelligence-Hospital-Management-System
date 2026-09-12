@@ -9,10 +9,7 @@ if os.path.exists(TEST_DB_FILE):
     except Exception:
         pass
 
-db_file_clean = TEST_DB_FILE.replace("\\", "/")
-if not db_file_clean.startswith("/"):
-    db_file_clean = "/" + db_file_clean
-os.environ["DATABASE_URL"] = f"sqlite://{db_file_clean}"
+os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_FILE.replace('\\', '/')}"
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../backend")))
 
