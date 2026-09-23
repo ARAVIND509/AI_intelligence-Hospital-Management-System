@@ -108,33 +108,42 @@ def validate_phase15_security_and_hardening():
     try:
         from app.models.audit_log import AuditLog
         from app.core.audit import log_audit_event
-        from app.core.database import SessionLocal
+        from app.core.database import get_db
+        from app.main import app
 
-        db = SessionLocal()
-        log_audit_event(
-            user_id=1,
-            username="admin_sec_val",
-            role="ADMIN",
-            action="VALIDATION_SECURITY_AUDIT",
-            resource_type="PATIENT",
-            resource_id="101",
-            ip_address="127.0.0.1",
-            details="Security audit validation log",
-            db=db,
-        )
-        entry = (
-            db.query(AuditLog)
-            .filter(AuditLog.action == "VALIDATION_SECURITY_AUDIT")
-            .first()
-        )
+        # Use overridden test DB session if running under pytest, else default get_db
+        db_provider = app.dependency_overrides.get(get_db, get_db)
+        db_gen = db_provider()
+        db = next(db_gen)
 
-        if entry is None:
-            db.close()
-            raise RuntimeError("Audit log entry was not persisted to database")
+        try:
+            log_audit_event(
+                user_id=1,
+                username="admin_sec_val",
+                role="ADMIN",
+                action="VALIDATION_SECURITY_AUDIT",
+                resource_type="PATIENT",
+                resource_id="101",
+                ip_address="127.0.0.1",
+                details="Security audit validation log",
+                db=db,
+            )
+            entry = (
+                db.query(AuditLog)
+                .filter(AuditLog.action == "VALIDATION_SECURITY_AUDIT")
+                .first()
+            )
 
-        db.delete(entry)
-        db.commit()
-        db.close()
+            if entry is None:
+                raise RuntimeError("Audit log entry was not persisted to database")
+
+            db.delete(entry)
+            db.commit()
+        finally:
+            try:
+                next(db_gen, None)
+            except Exception:
+                pass
 
         results["15.8 Audit Logging Integrity"] = "[OK] PASS"
         print("[15.8] AuditLog schema & event logging functions verified.")

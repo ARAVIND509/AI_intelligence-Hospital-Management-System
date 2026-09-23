@@ -32,9 +32,9 @@ jobs:
 
       - name: Prepare Writable Test Database
         run: |
-          rm -f test_hospital.db backend/test_hospital.db
-          touch test_hospital.db
-          chmod 664 test_hospital.db
+          rm -f test_hospital.db backend/test_hospital.db tests/backend/test_hospital.db
+          touch test_hospital.db tests/backend/test_hospital.db
+          chmod 666 test_hospital.db tests/backend/test_hospital.db
 
       - name: Run Alembic Database Migrations Check
         run: |

@@ -2,15 +2,15 @@ import sys
 import os
 import pytest
 
-TEST_DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_hospital.db"))
-if os.path.exists(TEST_DB_FILE):
-    try:
-        os.remove(TEST_DB_FILE)
-    except Exception:
-        pass
-
-db_file_clean = TEST_DB_FILE.replace("\\", "/")
-os.environ["DATABASE_URL"] = f"sqlite:///{db_file_clean}"
+if not os.getenv("DATABASE_URL"):
+    TEST_DB_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_hospital.db"))
+    if os.path.exists(TEST_DB_FILE):
+        try:
+            os.remove(TEST_DB_FILE)
+        except Exception:
+            pass
+    db_file_clean = TEST_DB_FILE.replace("\\", "/")
+    os.environ["DATABASE_URL"] = f"sqlite:///{db_file_clean}"
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../backend")))
 
