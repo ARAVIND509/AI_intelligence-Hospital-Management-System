@@ -103,6 +103,7 @@ def test_phase15_8_audit_logging_verification(db_session):
         user_agent="Pytest-Security-Suite",
         status_code=200,
         details="Security audit test log",
+        db=db_session,
     )
 
     # Verify audit record saved in DB
