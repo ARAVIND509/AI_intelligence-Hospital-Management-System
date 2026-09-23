@@ -122,10 +122,18 @@ def validate_phase15_security_and_hardening():
             details="Security audit validation log",
             db=db,
         )
-        entry = db.query(AuditLog).filter(AuditLog.action == "VALIDATION_SECURITY_AUDIT").first()
-        if entry:
-            db.delete(entry)
-            db.commit()
+        entry = (
+            db.query(AuditLog)
+            .filter(AuditLog.action == "VALIDATION_SECURITY_AUDIT")
+            .first()
+        )
+
+        if entry is None:
+            db.close()
+            raise RuntimeError("Audit log entry was not persisted to database")
+
+        db.delete(entry)
+        db.commit()
         db.close()
 
         results["15.8 Audit Logging Integrity"] = "[OK] PASS"

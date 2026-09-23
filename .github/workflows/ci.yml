@@ -10,6 +10,10 @@ jobs:
   test-and-build:
     name: Run Unit & Integration Tests
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: test
+      SECRET_KEY: test_secret_key_ci_cd_pipeline_2026
+      DATABASE_URL: sqlite:///./test_hospital.db
 
     steps:
       - name: Checkout Code Repository
@@ -26,17 +30,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Prepare Writable Test Database
+        run: |
+          rm -f test_hospital.db backend/test_hospital.db
+          touch test_hospital.db
+          chmod 664 test_hospital.db
+
       - name: Run Alembic Database Migrations Check
-        env:
-          DATABASE_URL: sqlite:///./test_hospital.db
         run: |
           cd backend
           python -m alembic upgrade head
 
+      - name: Generate CI TLS certificates
+        run: |
+          install -d -m 700 deployment/nginx/ssl
+          openssl req -x509 -nodes -newkey rsa:2048 \
+            -keyout deployment/nginx/ssl/server.key \
+            -out deployment/nginx/ssl/server.crt \
+            -days 1 \
+            -subj "/CN=localhost"
+          chmod 600 deployment/nginx/ssl/server.key
+          chmod 644 deployment/nginx/ssl/server.crt
+
       - name: Run Pytest Test Suite
-        env:
-          ENVIRONMENT: test
-          SECRET_KEY: test_secret_key_ci_cd_pipeline_2026
         run: |
           python -m pytest --cov=backend/app --cov-report=term-missing
 
